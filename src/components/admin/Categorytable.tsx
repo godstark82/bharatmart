@@ -1,69 +1,118 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import  db from "@/lib/firebase/firestore";
-import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import db from "@/lib/firebase/firestore";
 import { Category } from "@/types/categories";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash, Edit } from "lucide-react";
+import Image from "next/image";
 
-export default function CategoryTable() {
-  const [categories, setCategories] = useState<Category[]>([]);
+async function fetchCategories(): Promise<Category[]> {
+  const snapshot = await getDocs(collection(db, "categories"));
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+  })) as Category[];
+}
 
-  // Realtime fetch
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, "categories"), (snap) => {
-      const data = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Category[];
-      setCategories(data);
-    });
+interface CategoryTableProps {
+  onEdit: (category: Category) => void;
+}
 
-    return () => unsub();
-  }, []);
+export default function CategoryTable({ onEdit }: CategoryTableProps) {
+  const queryClient = useQueryClient();
 
-  // Delete category
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteDoc(doc(db, "categories", id));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+
   const handleDelete = async (id: string) => {
-    await deleteDoc(doc(db, "categories", id));
+    if (confirm("Delete this category?")) {
+      deleteCategoryMutation.mutate(id);
+    }
   };
 
+  if (isLoading) {
+    return <p className="text-gray-500">Loading categories...</p>;
+  }
+
   return (
-    <div className="overflow-x-auto border rounded-lg">
+    <div className="overflow-x-auto border rounded-lg bg-white">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[50px] text-center">Icon</TableHead>
+            <TableHead>Image</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Slug</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>SEO Title</TableHead>
+            <TableHead>Created</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {categories.map((cat) => (
-            <TableRow key={cat.id} className="hover:bg-gray-50 transition">
-              <TableCell className="text-center">
-                {cat.icon ? (
-                  <img src={cat.icon} alt={cat.name} className="w-6 h-6 object-contain mx-auto" />
-                ) : (
-                  <div className="w-6 h-6 bg-gray-200 rounded-full mx-auto" />
-                )}
-              </TableCell>
-              <TableCell>{cat.name}</TableCell>
-              <TableCell>{cat.slug}</TableCell>
-              <TableCell className="max-w-xs truncate">{cat.description}</TableCell>
-              <TableCell className="max-w-xs truncate">{cat.metaTitle}</TableCell>
-              <TableCell className="flex gap-2 justify-center">
-                
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(cat.id)}>
-                  <Trash className="w-4 h-4" />
-                </Button>
+          {categories.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-gray-500">
+                No categories yet
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            categories.map((cat) => (
+              <TableRow key={cat.id} className="hover:bg-gray-50 transition">
+                <TableCell>
+                  {cat.image ? (
+                    <div className="relative w-12 h-12">
+                      <Image
+                        src={cat.image}
+                        alt={cat.name}
+                        fill
+                        className="object-cover rounded"
+                        sizes="48px"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                      <span className="text-xs text-gray-400">No image</span>
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="font-medium">{cat.name}</TableCell>
+                <TableCell className="text-sm text-gray-500">
+                  {cat.createdAt.toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(cat)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(cat.id)}
+                      disabled={deleteCategoryMutation.isPending}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>

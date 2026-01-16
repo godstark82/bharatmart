@@ -1,13 +1,6 @@
 export interface Category {
   id: string;
   name: string;
-  slug: string;
-  description: string;
- icon?: string;  
- 
-  metaTitle: string;
-  metaDescription: string;
-  keywords: string[];
+  image?: string;
   createdAt: Date;
-  updatedAt: Date;
 }

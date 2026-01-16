@@ -1,7 +1,8 @@
 export interface User {
-  id: string;
+  uid: string;
   email: string;
-  role: 'admin' | 'seller' | 'buyer';
+  role: 'admin' | 'seller';
   name: string;
+  whatsappNumber?: string;
   createdAt: Date;
 }
