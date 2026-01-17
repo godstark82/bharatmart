@@ -68,7 +68,7 @@ export function ProductDialog({
         title: product.title || "",
         description: product.description || "",
         images: product.images || [],
-        price: product.price || 0,
+        price: product.price ||0 ,
         categoryId: product.categoryId || "",
         whatsappNumber: product.whatsappNumber || "",
         sku: product.sku || "",

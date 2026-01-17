@@ -426,7 +426,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-blue-800 pt-6 text-center text-sm text-blue-200">
-            <p>© 2024 All rights reserved. BharatMart Ltd.</p>
+            <p>© 2026 All rights reserved. BharatMart Ltd.</p>
           </div>
         </div>
       </footer>

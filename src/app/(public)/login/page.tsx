@@ -11,6 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link";
 import { ShoppingBag, Loader2, AlertCircle } from "lucide-react";
 import { MainNavbar } from "@/components/layout/MainNavbar";
+import { doc, getDoc } from "firebase/firestore";
+import db from "@/lib/firebase/firestore"; // apne path ke according
+
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,8 +21,51 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-
   const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+
+    const user = userCredential.user;
+
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error("User data not found");
+    }
+
+    const { role } = userSnap.data();
+
+    if (role === "admin") {
+      router.push("/admin/dashboard");
+    } else {
+      router.push("/seller/products");
+    }
+  } catch (err: any) {
+    setError(
+      err.code === "auth/invalid-credential"
+        ? "Invalid email or password"
+        : err.code === "auth/user-not-found"
+        ? "No account found with this email"
+        : err.code === "auth/wrong-password"
+        ? "Incorrect password"
+        : "Failed to sign in. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+ /* const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -40,7 +86,7 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  };*/
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">

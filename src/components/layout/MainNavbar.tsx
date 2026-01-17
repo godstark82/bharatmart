@@ -147,7 +147,7 @@ export function MainNavbar() {
 
       {/* Category Navigation */}
       {categories.length > 0 && (
-        <div className="bg-white border-b sticky top-[104px] z-40">
+        <div className="bg-white border-b  top-[104px] z-40">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide h-12">
               {categories.map((category) => (
