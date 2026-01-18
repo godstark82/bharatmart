@@ -11,7 +11,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
 } from "firebase/firestore";
 import db from "@/lib/firebase/firestore";
 import { Product } from "@/types/products";
@@ -29,16 +28,19 @@ import { Plus, Edit, Trash } from "lucide-react";
 async function fetchSellerProducts(sellerId: string): Promise<Product[]> {
   const q = query(
     collection(db, "products"),
-    where("sellerId", "==", sellerId),
-    orderBy("createdAt", "desc")
+    where("sellerId", "==", sellerId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({
+  const products = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
     createdAt: doc.data().createdAt?.toDate() || new Date(),
     updatedAt: doc.data().updatedAt?.toDate(),
   })) as Product[];
+
+  // Avoid Firestore composite-index requirements by sorting client-side.
+  products.sort((a, b) => (b.createdAt?.getTime?.() || 0) - (a.createdAt?.getTime?.() || 0));
+  return products;
 }
 
 async function fetchCategories(): Promise<Category[]> {
@@ -57,7 +59,12 @@ export default function SellerProductsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    isError: productsIsError,
+    error: productsError,
+  } = useQuery({
     queryKey: ["seller-products", user?.uid],
     queryFn: () => fetchSellerProducts(user!.uid),
     enabled: !!user?.uid && isSeller,
@@ -127,6 +134,13 @@ export default function SellerProductsPage() {
         <CardContent>
           {productsLoading ? (
             <p className="text-gray-500">Loading products...</p>
+          ) : productsIsError ? (
+            <div className="space-y-2">
+              <p className="text-red-600 font-medium">Failed to load products.</p>
+              <p className="text-sm text-gray-600 break-words">
+                {(productsError as any)?.message || "Unknown error"}
+              </p>
+            </div>
           ) : products.length === 0 ? (
             <p className="text-gray-500">No products yet. Add your first product!</p>
           ) : (

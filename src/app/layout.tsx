@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BharatMart - Product Marketplace",
-  description: "Browse and buy products directly via WhatsApp",
+  description: "Browse products and checkout your cart via WhatsApp",
 };
 
 export default function RootLayout({

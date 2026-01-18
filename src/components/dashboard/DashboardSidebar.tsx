@@ -21,7 +21,13 @@ const menuItems: MenuItem[] = [
     label: "Dashboard",
     href: "/admin/dashboard",
     icon: LayoutDashboard,
-    roles: ["admin", "seller"],
+    roles: ["admin"],
+  },
+  {
+    label: "Dashboard",
+    href: "/seller/dashboard",
+    icon: LayoutDashboard,
+    roles: ["seller"],
   },
   {
     label: "Categories",

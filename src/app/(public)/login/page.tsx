@@ -47,7 +47,7 @@ export default function LoginPage() {
     if (role === "admin") {
       router.push("/admin/dashboard");
     } else {
-      router.push("/seller/products");
+      router.push("/seller/dashboard");
     }
   } catch (err: any) {
     setError(
@@ -63,30 +63,6 @@ export default function LoginPage() {
     setLoading(false);
   }
 };
-
-
- /* const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
-    } catch (err: any) {
-      setError(
-        err.code === "auth/invalid-credential"
-          ? "Invalid email or password"
-          : err.code === "auth/user-not-found"
-          ? "No account found with this email"
-          : err.code === "auth/wrong-password"
-          ? "Incorrect password"
-          : "Failed to sign in. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };*/
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">

@@ -128,6 +128,13 @@ export function ProductDialog({
       setNewImageUrl("");
       setNewFeature("");
     },
+    onError: (err) => {
+      console.error("Failed to add product:", err);
+      alert(
+        (err as any)?.message ||
+          "Failed to save product. Check Firestore rules / permissions and try again."
+      );
+    },
   });
 
   const updateProductMutation = useMutation({
@@ -143,6 +150,13 @@ export function ProductDialog({
       queryClient.invalidateQueries({ queryKey: ["seller-products"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       onOpenChange(false);
+    },
+    onError: (err) => {
+      console.error("Failed to update product:", err);
+      alert(
+        (err as any)?.message ||
+          "Failed to update product. Check Firestore rules / permissions and try again."
+      );
     },
   });
 

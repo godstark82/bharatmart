@@ -61,11 +61,15 @@ export default function SignupPage() {
         name: name.trim(),
         role: "seller", // Default role is seller
         whatsappNumber: whatsappNumber.trim() || "",
+        pincode: "",
+        city: "",
+        state: "",
+        locationLat: null,
+        locationLng: null,
         createdAt: serverTimestamp(),
       });
 
-      // Redirect to dashboard
-      router.push("/dashboard");
+      router.push("/seller/dashboard");
     } catch (err: any) {
       setError(
         err.code === "auth/email-already-in-use"

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import {
-  MessageCircle,
+  ShoppingCart,
   ArrowLeft,
   CheckCircle2,
   Package,
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { MainNavbar } from "@/components/layout/MainNavbar";
+import { useInquiry } from "@/lib/providers/InquiryProvider";
 
 async function fetchProduct(id: string): Promise<Product | null> {
   const docRef = doc(db, "products", id);
@@ -77,22 +78,12 @@ async function fetchRelatedProducts(categoryId: string, currentProductId: string
   return products.filter((p) => p.id !== currentProductId).slice(0, 3);
 }
 
-function getWhatsAppUrl(product: Product, sellerWhatsApp?: string): string | null {
-  const whatsappNumber = product.whatsappNumber || sellerWhatsApp || "";
-  if (!whatsappNumber) return null;
-  const cleanNumber = whatsappNumber.replace(/[^\d]/g, "");
-  if (!cleanNumber) return null;
-  const message = encodeURIComponent(
-    `Hi! I'm interested in ${product.title} (₹${product.price}). Can you provide more details?`
-  );
-  return `https://wa.me/${cleanNumber}?text=${message}`;
-}
-
 export default function ProductDetailPage() {
   const params = useParams();
   const productId = params.id as string;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const { addItem } = useInquiry();
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -173,7 +164,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const whatsappUrl = getWhatsAppUrl(product, seller?.whatsappNumber as string | undefined);
+  const sellerName = (seller as any)?.name || (seller as any)?.email || "Seller";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -351,6 +342,17 @@ export default function ProductDetailPage() {
                   <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                 )}
               </div>
+
+              {/* Seller */}
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Sold by:</span>
+                <Link
+                  href={`/seller/${product.sellerId}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  {sellerName}
+                </Link>
+              </div>
             </div>
 
             {/* Quick Info Cards */}
@@ -435,26 +437,31 @@ export default function ProductDetailPage() {
               </Card>
             )}
 
-            {/* WhatsApp CTA */}
+            {/* Cart CTA */}
             <div className="pt-4 space-y-3">
-              {whatsappUrl ? (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button
-                    size="lg"
-                    className="w-full text-lg py-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg hover:shadow-xl transition-all"
-                  >
-                    <MessageCircle className="mr-2 h-5 w-5" />
-                    Chat on WhatsApp
-                  </Button>
-                </a>
-              ) : (
-                <Button size="lg" className="w-full text-lg py-6" disabled>
-                  <MessageCircle className="mr-2 h-5 w-5" />
-                  WhatsApp not available
+              <Button
+                size="lg"
+                className="w-full text-lg py-6"
+                onClick={() =>
+                  addItem({
+                    productId: product.id,
+                    title: product.title,
+                    price: product.price,
+                    image: product.images?.[0],
+                    sellerId: product.sellerId,
+                  })
+                }
+              >
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Add to Cart
+              </Button>
+              <Link href="/cart" className="block">
+                <Button size="lg" variant="outline" className="w-full text-lg py-6">
+                  View Cart & Checkout
                 </Button>
-              )}
+              </Link>
               <p className="text-xs text-gray-500 text-center">
-                Click to open WhatsApp and connect directly with the seller
+                Checkout sends your cart to BharatMart WhatsApp (not directly to seller).
               </p>
             </div>
           </div>

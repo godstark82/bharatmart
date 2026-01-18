@@ -17,8 +17,10 @@ import {
   MessageCircle,
   Download,
   ShoppingBag,
+  ShoppingCart,
 } from "lucide-react";
 import { MainNavbar } from "@/components/layout/MainNavbar";
+import { useInquiry } from "@/lib/providers/InquiryProvider";
 
 async function fetchProducts(): Promise<Product[]> {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -42,6 +44,7 @@ async function fetchCategories(): Promise<Category[]> {
 
 function ProductCarousel({ products, title, getCategoryName }: { products: Product[]; title: string; getCategoryName: (id: string) => string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { addItem } = useInquiry();
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -77,38 +80,59 @@ function ProductCarousel({ products, title, getCategoryName }: { products: Produ
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {products.map((product) => (
-            <Link
+            <div
               key={product.id}
-              href={`/product/${product.id}`}
               className="flex-shrink-0 w-64 bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden group"
             >
-              <div className="relative h-48 bg-gray-100">
-                {product.images && product.images.length > 0 ? (
-                  <Image
-                    src={product.images[0]}
-                    alt={`${product.title} - Product image`}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    sizes="256px"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    <ShoppingBag className="h-16 w-16" />
+              <Link href={`/product/${product.id}`}>
+                <div className="relative h-48 bg-gray-100">
+                  {product.images && product.images.length > 0 ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={`${product.title} - Product image`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="256px"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      <ShoppingBag className="h-16 w-16" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    50% OFF
                   </div>
-                )}
-                <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  50% OFF
                 </div>
-              </div>
+              </Link>
               <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.title}</h3>
-                <div className="flex items-center gap-2 mb-2">
+                <Link href={`/product/${product.id}`}>
+                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    {product.title}
+                  </h3>
+                </Link>
+                <div className="flex items-center gap-2 mb-3">
                   <span className="text-xl font-bold text-blue-600">₹{product.price}</span>
                   <span className="text-sm text-gray-500 line-through">₹{product.price * 2}</span>
                 </div>
-                <p className="text-xs text-green-600 font-medium">Save - ₹{product.price}</p>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addItem({
+                      productId: product.id,
+                      title: product.title,
+                      price: product.price,
+                      image: product.images?.[0],
+                      sellerId: product.sellerId,
+                    });
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add to Cart
+                </Button>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
         <button
@@ -197,6 +221,7 @@ function CategoryIcons({ categories }: { categories: Category[] }) {
 }
 
 export default function HomePage() {
+  const { addItem } = useInquiry();
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
@@ -302,38 +327,58 @@ export default function HomePage() {
                   {/* Products Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
                     {categoryProducts.slice(0, 6).map((product) => (
-                      <Link
+                      <div
                         key={product.id}
-                        href={`/product/${product.id}`}
                         className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden group"
                       >
-                        <div className="relative h-40 bg-gray-100">
-                          {product.images && product.images.length > 0 ? (
-                            <Image
-                              src={product.images[0]}
-                              alt={`${product.title} - Product image`}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-gray-400">
-                              <ShoppingBag className="h-12 w-12" />
-                            </div>
-                          )}
-                          {product.featured && (
-                            <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
-                              Featured
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <p className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">
-                            {product.title}
-                          </p>
+                        <Link href={`/product/${product.id}`}>
+                          <div className="relative h-40 bg-gray-100">
+                            {product.images && product.images.length > 0 ? (
+                              <Image
+                                src={product.images[0]}
+                                alt={`${product.title} - Product image`}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full text-gray-400">
+                                <ShoppingBag className="h-12 w-12" />
+                              </div>
+                            )}
+                            {product.featured && (
+                              <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
+                                Featured
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                        <div className="p-3 space-y-2">
+                          <Link href={`/product/${product.id}`}>
+                            <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                              {product.title}
+                            </p>
+                          </Link>
                           <p className="text-lg font-bold text-blue-600">₹{product.price.toLocaleString()}</p>
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              addItem({
+                                productId: product.id,
+                                title: product.title,
+                                price: product.price,
+                                image: product.images?.[0],
+                                sellerId: product.sellerId,
+                              });
+                            }}
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Add
+                          </Button>
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
 
@@ -367,11 +412,11 @@ export default function HomePage() {
                 <p className="font-semibold">Contact Us</p>
                 <div className="flex items-center gap-2 text-sm">
                   <MessageCircle className="h-4 w-4" />
-                  <span>WhatsApp: +1 202-918-2132</span>
+                  <span>WhatsApp: 9983944688</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4" />
-                  <span>Call: +1 202-918-2132</span>
+                  <span>Call: 9983944688</span>
                 </div>
                 <div className="mt-4">
                   <p className="font-semibold mb-2">Download App</p>

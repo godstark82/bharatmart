@@ -17,10 +17,11 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { MessageCircle, Package, Filter, X } from "lucide-react";
+import { ShoppingCart, Package, Filter, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MainNavbar } from "@/components/layout/MainNavbar";
+import { useInquiry } from "@/lib/providers/InquiryProvider";
 
 async function fetchCategory(categoryId: string): Promise<Category | null> {
   const docRef = doc(db, "categories", categoryId);
@@ -55,20 +56,10 @@ async function fetchProductsByCategory(categoryId: string): Promise<Product[]> {
 type SortOption = "newest" | "oldest" | "price-low" | "price-high" | "name-asc" | "name-desc";
 type FilterOption = "all" | "in-stock" | "out-of-stock" | "featured";
 
-function getWhatsAppUrl(product: Product, sellerWhatsApp?: string): string | null {
-  const whatsappNumber = product.whatsappNumber || sellerWhatsApp || "";
-  if (!whatsappNumber) return null;
-  const cleanNumber = whatsappNumber.replace(/[^\d]/g, "");
-  if (!cleanNumber) return null;
-  const message = encodeURIComponent(
-    `Hi! I'm interested in ${product.title} (₹${product.price}). Can you provide more details?`
-  );
-  return `https://wa.me/${cleanNumber}?text=${message}`;
-}
-
 export default function CategoryPage() {
   const params = useParams();
   const categoryId = params.id as string;
+  const { addItem } = useInquiry();
 
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
@@ -355,24 +346,22 @@ export default function CategoryPage() {
                           <p className="text-xl font-bold text-gray-900">₹{product.price.toLocaleString()}</p>
                         </div>
                       </div>
-                      {getWhatsAppUrl(product) ? (
-                        <a
-                          href={getWhatsAppUrl(product)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full"
-                        >
-                          <Button className="w-full" size="sm">
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            Chat on WhatsApp
-                          </Button>
-                        </a>
-                      ) : (
-                        <Button className="w-full" size="sm" disabled>
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          WhatsApp Not Available
-                        </Button>
-                      )}
+                      <Button
+                        className="w-full"
+                        size="sm"
+                        onClick={() =>
+                          addItem({
+                            productId: product.id,
+                            title: product.title,
+                            price: product.price,
+                            image: product.images?.[0],
+                            sellerId: product.sellerId,
+                          })
+                        }
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Add to Cart
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}

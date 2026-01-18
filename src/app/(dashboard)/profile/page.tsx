@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, Phone, Loader2, CheckCircle2 } from "lucide-react";
+import { detectAndSaveLocation, loadLocation } from "@/lib/location";
 
 export default function ProfilePage() {
   const { user, userData, loading: authLoading, isAdmin, isSeller, refreshUserData } = useAuth();
@@ -19,6 +20,10 @@ export default function ProfilePage() {
 
   const [name, setName] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [detectingLocation, setDetectingLocation] = useState(false);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -30,16 +35,24 @@ export default function ProfilePage() {
       if (userData) {
         setName(userData.name || "");
         setWhatsappNumber(userData.whatsappNumber || "");
+        setPincode(userData.pincode || "");
+        setCity(userData.city || "");
+        setState(userData.state || "");
       }
     }
   }, [authLoading, user, isAdmin, isSeller, userData, router]);
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (data: { name: string; whatsappNumber: string }) => {
+    mutationFn: async (data: { name: string; whatsappNumber: string; pincode: string; city: string; state: string; locationLat?: number; locationLng?: number }) => {
       if (!user) throw new Error("User not authenticated");
       await updateDoc(doc(db, "users", user.uid), {
         name: data.name.trim(),
         whatsappNumber: data.whatsappNumber.trim() || "",
+        pincode: data.pincode.trim() || "",
+        city: data.city.trim() || "",
+        state: data.state.trim() || "",
+        locationLat: typeof data.locationLat === "number" ? data.locationLat : null,
+        locationLng: typeof data.locationLng === "number" ? data.locationLng : null,
       });
     },
     onSuccess: async () => {
@@ -56,7 +69,31 @@ export default function ProfilePage() {
       alert("Name is required");
       return;
     }
-    updateProfileMutation.mutate({ name, whatsappNumber });
+    updateProfileMutation.mutate({ name, whatsappNumber, pincode, city, state });
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setDetectingLocation(true);
+    try {
+      const detected = await detectAndSaveLocation();
+      setPincode(detected.pincode || "");
+      setCity(detected.city || "");
+      setState(detected.state || "");
+      // Persist to Firestore immediately (so seller becomes discoverable).
+      updateProfileMutation.mutate({
+        name,
+        whatsappNumber,
+        pincode: detected.pincode || "",
+        city: detected.city || "",
+        state: detected.state || "",
+        locationLat: detected.lat,
+        locationLng: detected.lng,
+      });
+    } catch (e: any) {
+      alert(e?.message || "Unable to fetch location. Please enter manually.");
+    } finally {
+      setDetectingLocation(false);
+    }
   };
 
   if (authLoading || !user || !userData) {
@@ -145,6 +182,58 @@ export default function ProfilePage() {
               </p>
             </div>
 
+            <div className="space-y-4 border-t pt-4">
+              <div>
+                <h3 className="font-semibold text-sm text-gray-900">Location</h3>
+                <p className="text-xs text-gray-500">
+                  Used to show your business to buyers searching for nearby sellers.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleUseCurrentLocation}
+                disabled={detectingLocation || updateProfileMutation.isPending}
+              >
+                {detectingLocation ? "Fetching location..." : "Use current location"}
+              </Button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input
+                    id="pincode"
+                    inputMode="numeric"
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    placeholder="e.g. 423651"
+                    disabled={updateProfileMutation.isPending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g. Nashik"
+                    disabled={updateProfileMutation.isPending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder="e.g. Maharashtra"
+                    disabled={updateProfileMutation.isPending}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Role</Label>
               <div className="px-3 py-2 bg-gray-50 rounded-md border">
@@ -178,6 +267,9 @@ export default function ProfilePage() {
                 onClick={() => {
                   setName(userData.name || "");
                   setWhatsappNumber(userData.whatsappNumber || "");
+                  setPincode(userData.pincode || "");
+                  setCity(userData.city || "");
+                  setState(userData.state || "");
                 }}
                 disabled={updateProfileMutation.isPending}
               >

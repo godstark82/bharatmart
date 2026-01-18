@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import db from "@/lib/firebase/firestore";
 import { Product } from "@/types/products";
 import { Category } from "@/types/categories";
+import { User } from "@/types/users";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -17,11 +18,12 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { MessageCircle, Package, Filter, X, Search as SearchIcon } from "lucide-react";
+import { ShoppingCart, Package, Filter, X, Search as SearchIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Input } from "@/components/ui/input";
+import { useInquiry } from "@/lib/providers/InquiryProvider";
 
 async function fetchAllProducts(): Promise<Product[]> {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -43,23 +45,29 @@ async function fetchCategories(): Promise<Category[]> {
   })) as Category[];
 }
 
+async function fetchSellers(): Promise<User[]> {
+  const q = query(collection(db, "users"), where("role", "==", "seller"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => {
+    const data = d.data() as any;
+    return {
+      uid: d.id,
+      email: data.email,
+      role: data.role,
+      name: data.name,
+      whatsappNumber: data.whatsappNumber,
+      createdAt: data.createdAt?.toDate?.() || new Date(),
+    } as User;
+  });
+}
+
 type SortOption = "newest" | "oldest" | "price-low" | "price-high" | "name-asc" | "name-desc";
 type FilterOption = "all" | "in-stock" | "out-of-stock" | "featured";
-
-function getWhatsAppUrl(product: Product, sellerWhatsApp?: string): string | null {
-  const whatsappNumber = product.whatsappNumber || sellerWhatsApp || "";
-  if (!whatsappNumber) return null;
-  const cleanNumber = whatsappNumber.replace(/[^\d]/g, "");
-  if (!cleanNumber) return null;
-  const message = encodeURIComponent(
-    `Hi! I'm interested in ${product.title} (₹${product.price}). Can you provide more details?`
-  );
-  return `https://wa.me/${cleanNumber}?text=${message}`;
-}
 
 function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { addItem } = useInquiry();
   const searchQuery = searchParams.get("q") || "";
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -80,6 +88,17 @@ function SearchPageContent() {
     queryFn: fetchCategories,
   });
 
+  const { data: sellers = [] } = useQuery({
+    queryKey: ["sellers"],
+    queryFn: fetchSellers,
+  });
+
+  const sellerById = useMemo(() => {
+    const map = new Map<string, User>();
+    for (const s of sellers) map.set(s.uid, s);
+    return map;
+  }, [sellers]);
+
   // Update local search query when URL changes
   useEffect(() => {
     setLocalSearchQuery(searchQuery);
@@ -93,15 +112,17 @@ function SearchPageContent() {
     return allProducts.filter((product) => {
       const titleMatch = product.title.toLowerCase().includes(query);
       const descriptionMatch = product.description?.toLowerCase().includes(query);
+      const seller = sellerById.get(product.sellerId);
+      const sellerNameMatch = (seller?.name || "").toLowerCase().includes(query);
       const categoryMatch = categories
         .find((c) => c.id === product.categoryId)
         ?.name.toLowerCase()
         .includes(query);
       const tagsMatch = product.tags?.some((tag) => tag.toLowerCase().includes(query));
       
-      return titleMatch || descriptionMatch || categoryMatch || tagsMatch;
+      return titleMatch || descriptionMatch || sellerNameMatch || categoryMatch || tagsMatch;
     });
-  }, [allProducts, searchQuery, categories]);
+  }, [allProducts, searchQuery, categories, sellerById]);
 
   // Apply additional filters and sorting
   const filteredAndSortedProducts = useMemo(() => {
@@ -411,6 +432,17 @@ function SearchPageContent() {
                             {product.title}
                           </h3>
                         </Link>
+                        {sellerById.get(product.sellerId)?.name && (
+                          <div className="text-sm text-gray-600 mb-2">
+                            <span className="mr-1">Seller:</span>
+                            <Link
+                              href={`/seller/${product.sellerId}`}
+                              className="text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              {sellerById.get(product.sellerId)!.name}
+                            </Link>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <p className="text-xl font-bold text-gray-900">
@@ -418,24 +450,22 @@ function SearchPageContent() {
                             </p>
                           </div>
                         </div>
-                        {getWhatsAppUrl(product) ? (
-                          <a
-                            href={getWhatsAppUrl(product)!}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full"
-                          >
-                            <Button className="w-full" size="sm">
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Chat on WhatsApp
-                            </Button>
-                          </a>
-                        ) : (
-                          <Button className="w-full" size="sm" disabled>
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            WhatsApp Not Available
-                          </Button>
-                        )}
+                        <Button
+                          className="w-full"
+                          size="sm"
+                          onClick={() =>
+                            addItem({
+                              productId: product.id,
+                              title: product.title,
+                              price: product.price,
+                              image: product.images?.[0],
+                              sellerId: product.sellerId,
+                            })
+                          }
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                          Add to Cart
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}
