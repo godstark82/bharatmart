@@ -9,7 +9,7 @@ import { User } from "@/types/users";
 
 interface AuthState {
   user: FirebaseUser | null;
-  role: "admin" | "seller" | null;
+  role: "admin" | "seller" | "buyer" | null;
   loading: boolean;
   userData: User | null;
 }
@@ -91,6 +91,7 @@ export function useAuth() {
     refreshUserData,
     isAdmin: authState.role === "admin",
     isSeller: authState.role === "seller",
+    isBuyer: authState.role === "buyer",
     isAuthenticated: !!authState.user,
   };
 }

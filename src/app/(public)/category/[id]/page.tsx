@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
+import { useAuthGate } from "@/hooks/useAuthGate";
 
 async function fetchCategory(categoryId: string): Promise<Category | null> {
   const docRef = doc(db, "categories", categoryId);
@@ -60,6 +61,10 @@ export default function CategoryPage() {
   const params = useParams();
   const categoryId = params.id as string;
   const { addItem } = useInquiry();
+  const { ensureAuth, AuthDialog } = useAuthGate({
+    title: "Sign in to add to cart",
+    description: "Please sign in or create an account to add products to your cart.",
+  });
 
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
@@ -350,13 +355,15 @@ export default function CategoryPage() {
                         className="w-full"
                         size="sm"
                         onClick={() =>
-                          addItem({
-                            productId: product.id,
-                            title: product.title,
-                            price: product.price,
-                            image: product.images?.[0],
-                            sellerId: product.sellerId,
-                          })
+                          ensureAuth(() =>
+                            addItem({
+                              productId: product.id,
+                              title: product.title,
+                              price: product.price,
+                              image: product.images?.[0],
+                              sellerId: product.sellerId,
+                            })
+                          )
                         }
                       >
                         <ShoppingCart className="h-4 w-4 mr-2" />
@@ -370,6 +377,8 @@ export default function CategoryPage() {
           </div>
         </div>
       </div>
+
+      {AuthDialog}
     </div>
   );
 }

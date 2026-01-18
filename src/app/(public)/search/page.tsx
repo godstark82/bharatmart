@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Input } from "@/components/ui/input";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
+import { useAuthGate } from "@/hooks/useAuthGate";
 
 async function fetchAllProducts(): Promise<Product[]> {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -68,6 +69,10 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { addItem } = useInquiry();
+  const { ensureAuth, AuthDialog } = useAuthGate({
+    title: "Sign in to add to cart",
+    description: "Please sign in or create an account to add products to your cart.",
+  });
   const searchQuery = searchParams.get("q") || "";
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -454,13 +459,15 @@ function SearchPageContent() {
                           className="w-full"
                           size="sm"
                           onClick={() =>
-                            addItem({
-                              productId: product.id,
-                              title: product.title,
-                              price: product.price,
-                              image: product.images?.[0],
-                              sellerId: product.sellerId,
-                            })
+                            ensureAuth(() =>
+                              addItem({
+                                productId: product.id,
+                                title: product.title,
+                                price: product.price,
+                                image: product.images?.[0],
+                                sellerId: product.sellerId,
+                              })
+                            )
                           }
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
@@ -475,6 +482,8 @@ function SearchPageContent() {
           </div>
         )}
       </div>
+
+      {AuthDialog}
     </div>
   );
 }

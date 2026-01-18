@@ -26,7 +26,7 @@ export default function DashboardRedirectPage() {
       router.replace("/seller/dashboard");
       return;
     }
-    router.replace("/login");
+    router.replace("/");
   }, [loading, user, role, isAdmin, isSeller, router]);
 
   return (

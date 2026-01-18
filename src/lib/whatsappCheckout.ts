@@ -1,5 +1,5 @@
 import type { CartItem } from "@/lib/providers/InquiryProvider";
-import { loadLocation } from "@/lib/location";
+import { formatFullAddress, loadLocation } from "@/lib/location";
 
 export const CHECKOUT_WHATSAPP_NUMBER = "9983944688";
 
@@ -13,13 +13,19 @@ function formatMoneyINR(amount: number) {
 
 export function buildCheckoutMessage(items: CartItem[]) {
   const loc = loadLocation();
-  const locationLine = loc
-    ? `Location: ${[loc.city, loc.state].filter(Boolean).join(", ")}${loc.pincode ? ` (${loc.pincode})` : ""}`.trim()
-    : "Location: —";
+  const locationLine = `Delivery Address:\n${formatFullAddress(loc)}`;
+  const instructionsLine =
+    loc?.deliveryInstructions && loc.deliveryInstructions.trim().length > 0
+      ? `Delivery Instructions: ${loc.deliveryInstructions.trim()}`
+      : null;
+  const defaultLine =
+    loc?.isDefaultAddress ? "Default Address: Yes" : loc ? "Default Address: No" : null;
 
   const lines: string[] = [];
   lines.push("BharatMart - Cart Checkout");
   lines.push(locationLine);
+  if (instructionsLine) lines.push(instructionsLine);
+  if (defaultLine) lines.push(defaultLine);
   lines.push(`Time: ${new Date().toLocaleString()}`);
   lines.push("");
   lines.push("Items:");

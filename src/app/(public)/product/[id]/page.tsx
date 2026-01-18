@@ -29,6 +29,7 @@ import {
 import Link from "next/link";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
+import { useAuthGate } from "@/hooks/useAuthGate";
 
 async function fetchProduct(id: string): Promise<Product | null> {
   const docRef = doc(db, "products", id);
@@ -84,6 +85,10 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const { addItem } = useInquiry();
+  const { ensureAuth, openAuthDialog, AuthDialog, isAuthenticated, loading: authGateLoading } = useAuthGate({
+    title: "Sign in to use cart",
+    description: "Please sign in or create an account to add products to your cart and checkout.",
+  });
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -443,23 +448,41 @@ export default function ProductDetailPage() {
                 size="lg"
                 className="w-full text-lg py-6"
                 onClick={() =>
-                  addItem({
-                    productId: product.id,
-                    title: product.title,
-                    price: product.price,
-                    image: product.images?.[0],
-                    sellerId: product.sellerId,
-                  })
+                  ensureAuth(() =>
+                    addItem({
+                      productId: product.id,
+                      title: product.title,
+                      price: product.price,
+                      image: product.images?.[0],
+                      sellerId: product.sellerId,
+                    })
+                  )
                 }
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
               </Button>
-              <Link href="/cart" className="block">
-                <Button size="lg" variant="outline" className="w-full text-lg py-6">
+              {authGateLoading ? (
+                <Button size="lg" variant="outline" className="w-full text-lg py-6" type="button" disabled>
                   View Cart & Checkout
                 </Button>
-              </Link>
+              ) : isAuthenticated ? (
+                <Link href="/cart" className="block">
+                  <Button size="lg" variant="outline" className="w-full text-lg py-6">
+                    View Cart & Checkout
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full text-lg py-6"
+                  type="button"
+                  onClick={openAuthDialog}
+                >
+                  View Cart & Checkout
+                </Button>
+              )}
               <p className="text-xs text-gray-500 text-center">
                 Checkout sends your cart to BharatMart WhatsApp (not directly to seller).
               </p>
@@ -634,6 +657,8 @@ export default function ProductDetailPage() {
           </div>
         )}
       </main>
+
+      {AuthDialog}
     </div>
   );
 }

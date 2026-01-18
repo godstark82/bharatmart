@@ -46,8 +46,10 @@ export default function LoginPage() {
 
     if (role === "admin") {
       router.push("/admin/dashboard");
-    } else {
+    } else if (role === "seller") {
       router.push("/seller/dashboard");
+    } else {
+      router.push("/");
     }
   } catch (err: any) {
     setError(
@@ -79,7 +81,7 @@ export default function LoginPage() {
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Sign in to your account</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Access your seller or admin dashboard
+            Access your account
           </p>
         </div>
 

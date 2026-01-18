@@ -1,0 +1,33 @@
+<svg width="900" height="360" viewBox="0 0 900 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="360" fill="white"/>
+  <!-- soft ground -->
+  <path d="M90 275C140 250 215 240 310 252C420 266 470 305 580 300C690 295 750 260 820 275V330H90V275Z" fill="#EEF2F7"/>
+
+  <!-- milk bottle -->
+  <path d="M135 120C135 110 143 102 153 102H182C192 102 200 110 200 120V138C200 142 198 146 195 149L190 154V265C190 274 183 281 174 281H161C152 281 145 274 145 265V154L140 149C137 146 135 142 135 138V120Z" fill="#C7D2D9"/>
+  <rect x="145" y="165" width="45" height="28" rx="6" fill="#B6C3CB"/>
+
+  <!-- kettle -->
+  <path d="M265 115C265 105 273 97 283 97H356C366 97 374 105 374 115V235C374 270 346 298 311 298C276 298 248 270 248 235V155C248 145 256 137 266 137H265V115Z" fill="#8DA0AA"/>
+  <path d="M374 155C402 155 424 177 424 205C424 233 402 255 374 255" stroke="#8DA0AA" stroke-width="18" stroke-linecap="round"/>
+  <rect x="273" y="88" width="70" height="16" rx="8" fill="#8DA0AA"/>
+  <path d="M318 86C318 72 330 60 344 60H352" stroke="#8DA0AA" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- cup -->
+  <path d="M410 210H490V255C490 275 474 291 454 291C426 291 410 275 410 255V210Z" fill="#9FB0B9"/>
+  <path d="M490 222C512 222 528 238 528 260C528 282 512 298 490 298" stroke="#9FB0B9" stroke-width="14" stroke-linecap="round"/>
+  <rect x="410" y="200" width="80" height="16" rx="8" fill="#9FB0B9"/>
+
+  <!-- tablet -->
+  <rect x="535" y="120" width="170" height="190" rx="16" fill="#B9C7CF"/>
+  <rect x="552" y="140" width="136" height="120" rx="10" fill="#E8EFF4"/>
+  <circle cx="620" cy="287" r="8" fill="#9FB0B9"/>
+  <text x="575" y="182" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#8DA0AA">6:15am</text>
+
+  <!-- music notes -->
+  <path d="M260 72C260 72 250 50 270 44" stroke="#B6D08A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M290 78C290 78 280 56 300 50" stroke="#B6D08A" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="270" cy="46" r="4" fill="#B6D08A"/>
+  <circle cx="300" cy="52" r="4" fill="#B6D08A"/>
+</svg>
+

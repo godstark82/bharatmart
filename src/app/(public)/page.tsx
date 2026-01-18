@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
+import { useAuthGate } from "@/hooks/useAuthGate";
 
 async function fetchProducts(): Promise<Product[]> {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -222,6 +223,10 @@ function CategoryIcons({ categories }: { categories: Category[] }) {
 
 export default function HomePage() {
   const { addItem } = useInquiry();
+  const { ensureAuth, AuthDialog } = useAuthGate({
+    title: "Sign in to add to cart",
+    description: "Please sign in or create an account to add products to your cart.",
+  });
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
@@ -365,13 +370,15 @@ export default function HomePage() {
                             className="w-full"
                             onClick={(e) => {
                               e.preventDefault();
-                              addItem({
-                                productId: product.id,
-                                title: product.title,
-                                price: product.price,
-                                image: product.images?.[0],
-                                sellerId: product.sellerId,
-                              });
+                              ensureAuth(() =>
+                                addItem({
+                                  productId: product.id,
+                                  title: product.title,
+                                  price: product.price,
+                                  image: product.images?.[0],
+                                  sellerId: product.sellerId,
+                                })
+                              );
                             }}
                           >
                             <ShoppingCart className="h-4 w-4 mr-2" />
@@ -475,6 +482,8 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {AuthDialog}
     </div>
   );
 }

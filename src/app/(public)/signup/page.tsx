@@ -15,6 +15,7 @@ import { ShoppingBag, Loader2, AlertCircle } from "lucide-react";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 
 export default function SignupPage() {
+  const [accountType, setAccountType] = useState<"buyer" | "seller">("buyer");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,8 +60,18 @@ export default function SignupPage() {
         uid: userCredential.user.uid,
         email: email,
         name: name.trim(),
-        role: "seller", // Default role is seller
+        role: accountType,
         whatsappNumber: whatsappNumber.trim() || "",
+        businessName: "",
+        shopNo: "",
+        gstNumber: "",
+        houseNo: "",
+        floorNo: "",
+        blockNo: "",
+        buildingName: "",
+        area: "",
+        landmark: "",
+        country: "India",
         pincode: "",
         city: "",
         state: "",
@@ -69,7 +80,7 @@ export default function SignupPage() {
         createdAt: serverTimestamp(),
       });
 
-      router.push("/seller/dashboard");
+      router.push(accountType === "seller" ? "/seller/dashboard" : "/");
     } catch (err: any) {
       setError(
         err.code === "auth/email-already-in-use"
@@ -109,7 +120,7 @@ export default function SignupPage() {
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
             <CardDescription>
-              Create a seller account to manage your products
+              Choose account type and create your account
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -120,6 +131,35 @@ export default function SignupPage() {
                   <span className="text-sm">{error}</span>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label>Sign up as</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={accountType === "buyer" ? "default" : "outline"}
+                    className="w-full"
+                    onClick={() => setAccountType("buyer")}
+                    disabled={loading}
+                  >
+                    Buyer
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={accountType === "seller" ? "default" : "outline"}
+                    className="w-full"
+                    onClick={() => setAccountType("seller")}
+                    disabled={loading}
+                  >
+                    Seller
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {accountType === "seller"
+                    ? "Seller accounts can list products and appear in nearby sellers."
+                    : "Buyer accounts can add to cart and checkout."}
+                </p>
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -197,8 +237,7 @@ export default function SignupPage() {
 
               <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                 <p className="text-xs text-blue-700">
-                  <strong>Note:</strong> New accounts are created as <strong>sellers</strong> by default. 
-                  Contact an administrator to upgrade to admin role.
+                  <strong>Note:</strong> Admin accounts are created by administrators only.
                 </p>
               </div>
 

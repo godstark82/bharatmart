@@ -1,4 +1,15 @@
 export type StoredLocation = {
+  // Full address (Amazon-style)
+  houseNo?: string; // house/flat/shop number
+  floorNo?: string;
+  blockNo?: string;
+  buildingName?: string;
+  area?: string; // street / locality / sector / village
+  landmark?: string;
+  country?: string;
+  deliveryInstructions?: string;
+  isDefaultAddress?: boolean;
+
   pincode?: string;
   city?: string;
   state?: string;
@@ -19,6 +30,8 @@ export function loadLocation(): StoredLocation | null {
     const parsed = JSON.parse(raw) as StoredLocation;
     const hasAny =
       !!parsed?.pincode ||
+      !!parsed?.houseNo ||
+      !!parsed?.area ||
       (typeof parsed?.lat === "number" && typeof parsed?.lng === "number");
     if (!hasAny) return null;
     return parsed;
@@ -39,11 +52,39 @@ export function clearLocation() {
 
 export function getLocationLabel(loc: StoredLocation | null) {
   if (!loc) return "Set location";
+  if (loc.area && loc.pincode) return `${loc.area} ${loc.pincode}`;
   if (loc.city && loc.pincode) return `${loc.city} ${loc.pincode}`;
-  if (loc.pincode) return loc.pincode;
-  if (loc.city) return loc.city;
+  if (loc.pincode) return `${loc.pincode}`;
+  if (loc.area) return `${loc.area}`;
+  if (loc.city) return `${loc.city}`;
   if (typeof loc.lat === "number" && typeof loc.lng === "number") return "Current location";
   return "Set location";
+}
+
+export function formatFullAddress(loc: StoredLocation | null) {
+  if (!loc) return "—";
+  const line1 = [
+    loc.houseNo,
+    loc.floorNo ? `Floor ${loc.floorNo}` : null,
+    loc.blockNo ? `Block ${loc.blockNo}` : null,
+    loc.buildingName,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const line2 = [loc.area, loc.landmark ? `Landmark: ${loc.landmark}` : null]
+    .filter(Boolean)
+    .join(", ");
+
+  const line3 = [
+    [loc.city, loc.state].filter(Boolean).join(", "),
+    loc.pincode ? `(${loc.pincode})` : null,
+    loc.country,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return [line1, line2, line3].filter((s) => !!s && String(s).trim().length > 0).join("\n");
 }
 
 export function wasAutoPrompted() {

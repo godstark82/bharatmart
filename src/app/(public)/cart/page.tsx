@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,12 +10,48 @@ import { Input } from "@/components/ui/input";
 import { Trash2, ShoppingCart } from "lucide-react";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
 import { buildWhatsAppCheckoutUrl } from "@/lib/whatsappCheckout";
+import { useAuthGate } from "@/hooks/useAuthGate";
+import { useAuth } from "@/hooks/useAuth";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import db from "@/lib/firebase/firestore";
+import { loadLocation } from "@/lib/location";
 
 export default function CartPage() {
   const { items, updateQty, removeItem, clearCart, totalAmount, totalQty } = useInquiry();
+  const { isAuthenticated, openAuthDialog, AuthDialog } = useAuthGate({
+    title: "Sign in to view cart",
+    description: "Please sign in or create an account to view your cart and checkout.",
+  });
+  const { user } = useAuth();
 
-  const handleCheckout = () => {
+  useEffect(() => {
+    if (!isAuthenticated) openAuthDialog();
+  }, [isAuthenticated, openAuthDialog]);
+
+  const handleCheckout = async () => {
     if (items.length === 0) return;
+    if (!user) return;
+
+    // Create an order record so it shows up in "Previous orders".
+    // (We still send the checkout to WhatsApp.)
+    try {
+      const loc = loadLocation();
+      const orderRef = await addDoc(collection(db, "orders"), {
+        userId: user.uid,
+        status: "placed",
+        items,
+        totalQty,
+        totalAmount,
+        deliveryAddress: loc || null,
+        createdAt: serverTimestamp(),
+      });
+      // NOTE: WhatsApp URL only supports the "text" query param; orderRef.id is stored in Firestore for history.
+      const url = buildWhatsAppCheckoutUrl(items);
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    } catch {
+      // Fall back to WhatsApp checkout even if order write fails.
+    }
     const url = buildWhatsAppCheckoutUrl(items);
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -22,6 +60,45 @@ export default function CartPage() {
     <div className="min-h-screen bg-gray-50">
       <MainNavbar />
 
+      {!isAuthenticated ? (
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="bg-white rounded-lg border overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 p-8 md:p-10">
+              <div className="w-full md:w-[420px] flex justify-center">
+                <Image
+                  src="/cart-empty.svg"
+                  alt="Empty cart illustration"
+                  width={420}
+                  height={220}
+                  className="h-auto w-full max-w-[420px]"
+                  priority
+                />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Your BharatMart Cart is empty
+                </h1>
+                <Link href="/" className="inline-block mt-2 text-blue-600 hover:text-blue-700">
+                  Shop today's deals
+                </Link>
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Link href="/login">
+                    <Button className="bg-yellow-400 text-black hover:bg-yellow-500">
+                      Sign in to your account
+                    </Button>
+                  </Link>
+                  <Link href="/signup">
+                    <Button variant="outline">Sign up now</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      ) : (
+        <>
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between gap-4">
@@ -40,16 +117,32 @@ export default function CartPage() {
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {items.length === 0 ? (
-          <Card>
-            <CardContent className="p-10 text-center">
-              <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-700 font-medium">Your cart is empty</p>
-              <p className="text-sm text-gray-600 mt-1">Add products to checkout on WhatsApp.</p>
-              <Link href="/" className="inline-block mt-4">
-                <Button>Continue shopping</Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-lg border overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 p-8 md:p-10">
+              <div className="w-full md:w-[420px] flex justify-center">
+                <Image
+                  src="/cart-empty.svg"
+                  alt="Empty cart illustration"
+                  width={420}
+                  height={220}
+                  className="h-auto w-full max-w-[420px]"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Your BharatMart Cart is empty
+                </h1>
+                <Link href="/" className="inline-block mt-2 text-blue-600 hover:text-blue-700">
+                  Shop today's deals
+                </Link>
+                <div className="mt-6">
+                  <Link href="/">
+                    <Button>Continue shopping</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
@@ -103,6 +196,10 @@ export default function CartPage() {
           </div>
         )}
       </main>
+        </>
+      )}
+
+      {AuthDialog}
     </div>
   );
 }
