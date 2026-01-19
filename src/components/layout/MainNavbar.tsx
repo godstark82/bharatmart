@@ -1,10 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { collection, getDocs } from "firebase/firestore";
-import db from "@/lib/firebase/firestore";
-import { Category } from "@/types/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,19 +16,22 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useAuthGate } from "@/hooks/useAuthGate";
 import {
   Menu,
   ShoppingBag,
   Search,
   User,
   LogOut,
+  LayoutDashboard,
   ShoppingCart,
   MapPin,
   ChevronDown,
@@ -46,26 +45,16 @@ import {
   wasAutoPrompted,
 } from "@/lib/location";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
-
-async function fetchCategories(): Promise<Category[]> {
-  const snapshot = await getDocs(collection(db, "categories"));
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate() || new Date(),
-  })) as Category[];
-}
+import { useCategories } from "@/lib/providers/CategoriesProvider";
 
 export function MainNavbar() {
   const { user, userData, isAuthenticated, logout, isAdmin, isSeller, loading: authLoading } = useAuth();
   const { totalQty } = useInquiry();
+  const { categories } = useCategories();
   const router = useRouter();
-  const { openAuthDialog, AuthDialog, loading: gateLoading } = useAuthGate({
-    title: "Sign in to use cart",
-    description: "Please sign in or create an account to view your cart and checkout.",
-  });
   const [searchQuery, setSearchQuery] = useState("");
   const [locationOpen, setLocationOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Full address fields (buyer delivery address)
   const [houseNo, setHouseNo] = useState("");
@@ -90,11 +79,6 @@ export function MainNavbar() {
       : userData?.role === "seller"
         ? "/seller/dashboard"
         : "/";
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
-    queryFn: fetchCategories,
-  });
 
   useEffect(() => {
     const loc = loadLocation();
@@ -245,8 +229,8 @@ export function MainNavbar() {
 
   return (
     <>
-      {/* Top Bar */}
-      <div className="bg-blue-50 border-b border-blue-100">
+      {/* Top Bar - hidden on mobile to save space */}
+      <div className="hidden md:block bg-blue-50 border-b border-blue-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10 text-sm">
             <p className="text-gray-700">Welcome to worldwide BharatMart!</p>
@@ -278,16 +262,71 @@ export function MainNavbar() {
 
       {/* Main Navigation */}
       <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4 h-16">
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
-            <Link href="/" className="flex items-center gap-2">
-              <ShoppingBag className="h-7 w-7 text-blue-600" />
-              <h1 className="text-2xl font-bold text-blue-600">BharatMart</h1>
+        <div className="container mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-2 sm:gap-4 h-14 sm:h-16">
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden shrink-0" aria-label="Open menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px] sm:w-[320px] overflow-y-auto p-0">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
+                <nav className="flex flex-col pt-14 pb-6">
+                  <div className="px-4 pb-4 border-b space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => { setLocationOpen(true); setMobileMenuOpen(false); }}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-left rounded-md hover:bg-gray-100"
+                    >
+                      <MapPin className="h-4 w-4 text-gray-500" />
+                      Set location
+                    </button>
+                    <Link href="/search" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">
+                      <Search className="h-4 w-4 text-gray-500" />
+                      Search
+                    </Link>
+                    <Link href="/nearby-sellers" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">Nearby Sellers</Link>
+                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">Track your order</Link>
+                    <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">All Offers</Link>
+                  </div>
+                  <div className="px-4 py-4 border-b space-y-1">
+                    {!isAuthenticated ? (
+                      <>
+                        <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm font-medium rounded-md hover:bg-gray-100">Sign in</Link>
+                        <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">Sign up</Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">My Profile</Link>
+                        {(isAdmin || isSeller) && (
+                          <Link href={dashboardHref} onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2.5 text-sm rounded-md hover:bg-gray-100">Dashboard</Link>
+                        )}
+                        <button type="button" onClick={() => { setMobileMenuOpen(false); handleLogout(); }} className="block w-full text-left px-3 py-2.5 text-sm text-red-600 rounded-md hover:bg-red-50">Logout</button>
+                      </>
+                    )}
+                  </div>
+                  {categories.length > 0 && (
+                    <div className="px-4 py-4">
+                      <p className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Categories</p>
+                      <div className="mt-1 space-y-0.5">
+                        {categories.map((cat) => (
+                          <Link key={cat.id} href={`/category/${cat.id}`} onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 text-sm rounded-md hover:bg-gray-100">
+                            {cat.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <ShoppingBag className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600">BharatMart</h1>
             </Link>
-            <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-4">
+            <div className="flex-1 min-w-0 md:hidden" />
+            <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-2xl mx-2 lg:mx-4 hidden md:block">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -299,37 +338,45 @@ export function MainNavbar() {
                 />
               </div>
             </form>
-            <div className="flex items-center gap-4">
+            <Link href="/search" className="md:hidden p-2 shrink-0 text-gray-600 hover:text-blue-600" aria-label="Search">
+              <Search className="h-5 w-5" />
+            </Link>
+            <div className="flex items-center gap-1 sm:gap-4 shrink-0">
               {isAuthenticated ? (
-                <>
-                  {(isAdmin || isSeller) && (
-                    <Link href={dashboardHref}>
-                      <Button variant="ghost" size="sm" className="hidden sm:flex">
-                        Dashboard
-                      </Button>
-                    </Link>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-2">
-                        <User className="h-4 w-4" />
-                        <span className="hidden sm:inline">{userData?.name || user?.email}</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <User className="h-4 w-4" />
+                      <span className="hidden sm:inline">{userData?.name || user?.email}</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      {userData?.name || user?.email || "Account"}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {(isAdmin || isSeller) && (
                       <DropdownMenuItem asChild>
-                        <Link href="/profile" className="flex items-center w-full">
-                          <User className="mr-2 h-4 w-4" />
-                          My Profile
+                        <Link href={dashboardHref} className="flex items-center w-full">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile" className="flex items-center w-full">
+                        <User className="mr-2 h-4 w-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <>
                   <Link href="/login">
@@ -339,12 +386,12 @@ export function MainNavbar() {
                   </Link>
                 </>
               )}
-              {authLoading || gateLoading ? (
+              {authLoading ? (
                 <Button variant="ghost" size="sm" className="gap-2 relative" type="button" disabled>
                   <ShoppingCart className="h-5 w-5" />
                   <span className="hidden sm:inline">Cart</span>
                 </Button>
-              ) : isAuthenticated ? (
+              ) : (
                 <Link href="/cart">
                   <Button variant="ghost" size="sm" className="gap-2 relative">
                     <ShoppingCart className="h-5 w-5" />
@@ -356,22 +403,6 @@ export function MainNavbar() {
                     )}
                   </Button>
                 </Link>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 relative"
-                  type="button"
-                  onClick={openAuthDialog}
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="hidden sm:inline">Cart</span>
-                  {totalQty > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] leading-none px-1.5 py-1 rounded-full">
-                      {totalQty}
-                    </span>
-                  )}
-                </Button>
               )}
             </div>
           </div>
@@ -380,9 +411,9 @@ export function MainNavbar() {
 
       {/* Category Navigation */}
       {categories.length > 0 && (
-        <div className="bg-white border-b  top-[104px] z-40">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide h-12">
+        <div className="bg-white border-b z-40 overflow-x-auto">
+          <div className="container mx-auto px-3 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-hide h-12 min-w-0">
               {categories.map((category) => (
                 <Link
                   key={category.id}
@@ -399,7 +430,7 @@ export function MainNavbar() {
       )}
 
       <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Set your location</DialogTitle>
             <DialogDescription>
@@ -572,7 +603,6 @@ export function MainNavbar() {
         </DialogContent>
       </Dialog>
 
-      {AuthDialog}
     </>
   );
 }

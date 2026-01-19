@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export type CartItem = {
   productId: string;
@@ -58,6 +59,7 @@ export const InquiryProvider = ({ children }: { children: React.ReactNode }) => 
       }
       return [...prev, { ...item, qty }];
     });
+    toast.success("Added to cart");
   };
 
   const updateQty = (productId: string, qty: number) => {

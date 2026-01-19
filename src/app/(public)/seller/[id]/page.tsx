@@ -9,13 +9,11 @@ import { collection, doc, getDoc, getDocs, query, where } from "firebase/firesto
 import db from "@/lib/firebase/firestore";
 import { Product } from "@/types/products";
 import { User } from "@/types/users";
-import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Package, Store } from "lucide-react";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
-import { useAuthGate } from "@/hooks/useAuthGate";
 
 async function fetchSeller(sellerId: string): Promise<User | null> {
   const docRef = doc(db, "users", sellerId);
@@ -52,10 +50,6 @@ export default function SellerPublicPage() {
   const params = useParams();
   const sellerId = params.id as string;
   const { addItem } = useInquiry();
-  const { ensureAuth, AuthDialog } = useAuthGate({
-    title: "Sign in to add to cart",
-    description: "Please sign in or create an account to add products to your cart.",
-  });
 
   const { data: seller, isLoading: sellerLoading } = useQuery({
     queryKey: ["public-seller", sellerId],
@@ -76,8 +70,6 @@ export default function SellerPublicPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <MainNavbar />
-
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-start justify-between gap-6">
@@ -155,15 +147,13 @@ export default function SellerPublicPage() {
                           className="w-full"
                           size="sm"
                           onClick={() =>
-                            ensureAuth(() =>
-                              addItem({
-                                productId: product.id,
-                                title: product.title,
-                                price: product.price,
-                                image: product.images?.[0],
-                                sellerId: product.sellerId,
-                              })
-                            )
+                            addItem({
+                              productId: product.id,
+                              title: product.title,
+                              price: product.price,
+                              image: product.images?.[0],
+                              sellerId: product.sellerId,
+                            })
                           }
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
@@ -179,7 +169,6 @@ export default function SellerPublicPage() {
         </Card>
       </main>
 
-      {AuthDialog}
     </div>
   );
 }

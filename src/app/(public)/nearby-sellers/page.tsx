@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import db from "@/lib/firebase/firestore";
-import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +56,6 @@ export default function NearbySellersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <MainNavbar />
 
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">

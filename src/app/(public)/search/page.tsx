@@ -21,10 +21,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { ShoppingCart, Package, Filter, X, Search as SearchIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Input } from "@/components/ui/input";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
-import { useAuthGate } from "@/hooks/useAuthGate";
+import { useCategories } from "@/lib/providers/CategoriesProvider";
 
 async function fetchAllProducts(): Promise<Product[]> {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -35,15 +34,6 @@ async function fetchAllProducts(): Promise<Product[]> {
     createdAt: doc.data().createdAt?.toDate() || new Date(),
     updatedAt: doc.data().updatedAt?.toDate(),
   })) as Product[];
-}
-
-async function fetchCategories(): Promise<Category[]> {
-  const snapshot = await getDocs(collection(db, "categories"));
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate() || new Date(),
-  })) as Category[];
 }
 
 async function fetchSellers(): Promise<User[]> {
@@ -69,10 +59,6 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { addItem } = useInquiry();
-  const { ensureAuth, AuthDialog } = useAuthGate({
-    title: "Sign in to add to cart",
-    description: "Please sign in or create an account to add products to your cart.",
-  });
   const searchQuery = searchParams.get("q") || "";
   const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -83,14 +69,10 @@ function SearchPageContent() {
     max: "",
   });
 
+  const { categories } = useCategories();
   const { data: allProducts = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products", "all"],
     queryFn: fetchAllProducts,
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
-    queryFn: fetchCategories,
   });
 
   const { data: sellers = [] } = useQuery({
@@ -204,64 +186,60 @@ function SearchPageContent() {
 
   if (productsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <MainNavbar />
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading search results...</p>
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          <p className="text-gray-600">Loading search results...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MainNavbar />
-
+    <div className="flex min-h-0 flex-1 flex-col bg-gray-50">
       {/* Search Header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="max-w-2xl mx-auto">
+      <div className="shrink-0 border-b bg-white">
+        <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+          <div className="mx-auto max-w-2xl">
             <form onSubmit={handleSearch} className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <SearchIcon className="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Search for products..."
                 value={localSearchQuery}
                 onChange={(e) => setLocalSearchQuery(e.target.value)}
-                className="pl-10 pr-4 h-12 text-lg"
+                className="h-11 pl-10 pr-24 text-base sm:h-12 sm:pr-28 sm:text-lg"
               />
-              <Button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2">
+              <Button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2" size="sm">
                 Search
               </Button>
             </form>
             {searchQuery && (
-              <p className="mt-4 text-gray-600">
-                {filteredAndSortedProducts.length} result{filteredAndSortedProducts.length !== 1 ? "s" : ""} found for "
-                {searchQuery}"
+              <p className="mt-3 text-sm text-gray-600 sm:mt-4 sm:text-base">
+                {filteredAndSortedProducts.length} result{filteredAndSortedProducts.length !== 1 ? "s" : ""} found for &quot;{searchQuery}&quot;
               </p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto min-h-0 flex-1 flex flex-col px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         {!searchQuery ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <SearchIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Start your search</h3>
-              <p className="text-gray-600 mb-4">
-                Enter a product name, category, or keyword to find what you're looking for.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+            <Card className="w-full max-w-md">
+              <CardContent className="p-6 text-center sm:p-8">
+                <SearchIcon className="mx-auto mb-4 size-12 text-gray-400 sm:size-16" />
+                <h3 className="mb-2 text-base font-semibold text-gray-900 sm:text-lg">Start your search</h3>
+                <p className="text-sm text-gray-600 sm:text-base">
+                  Enter a product name, category, or keyword to find what you&apos;re looking for.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:gap-8">
             {/* Sidebar Filters */}
-            <aside className="lg:w-64 flex-shrink-0">
+            <aside className="shrink-0 lg:w-64">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-6">
@@ -359,14 +337,13 @@ function SearchPageContent() {
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1">
+            <div className="flex min-h-0 flex-1 flex-col">
               {/* Sort Bar */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
+              <div className="mb-4 flex shrink-0 items-center justify-between sm:mb-6">
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="newest">Newest First</SelectItem>
                       <SelectItem value="oldest">Oldest First</SelectItem>
@@ -375,30 +352,31 @@ function SearchPageContent() {
                       <SelectItem value="name-asc">Name: A to Z</SelectItem>
                       <SelectItem value="name-desc">Name: Z to A</SelectItem>
                     </SelectContent>
-                  </Select>
-                </div>
+                </Select>
               </div>
 
               {/* Products Grid */}
               {filteredAndSortedProducts.length === 0 ? (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-                    <p className="text-gray-600 mb-4">
-                      {hasActiveFilters
-                        ? "Try adjusting your filters to see more products."
-                        : `No products match "${searchQuery}". Try a different search term.`}
-                    </p>
-                    {hasActiveFilters && (
-                      <Button variant="outline" onClick={clearFilters}>
-                        Clear Filters
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
+                <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+                  <Card className="w-full max-w-md">
+                    <CardContent className="p-6 text-center sm:p-8">
+                      <Package className="mx-auto mb-4 size-12 text-gray-400 sm:size-16" />
+                      <h3 className="mb-2 text-base font-semibold text-gray-900 sm:text-lg">No products found</h3>
+                      <p className="mb-4 text-sm text-gray-600 sm:text-base">
+                        {hasActiveFilters
+                          ? "Try adjusting your filters to see more products."
+                          : `No products match "${searchQuery}". Try a different search term.`}
+                      </p>
+                      {hasActiveFilters && (
+                        <Button variant="outline" onClick={clearFilters}>
+                          Clear Filters
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredAndSortedProducts.map((product) => (
                     <Card
                       key={product.id}
@@ -414,8 +392,8 @@ function SearchPageContent() {
                               className="object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                              <Package className="h-12 w-12 text-gray-400" />
+                            <div className="flex h-full w-full items-center justify-center bg-gray-200">
+                              <Package className="size-12 text-gray-400" />
                             </div>
                           )}
                           {product.featured && (
@@ -459,15 +437,13 @@ function SearchPageContent() {
                           className="w-full"
                           size="sm"
                           onClick={() =>
-                            ensureAuth(() =>
-                              addItem({
-                                productId: product.id,
-                                title: product.title,
-                                price: product.price,
-                                image: product.images?.[0],
-                                sellerId: product.sellerId,
-                              })
-                            )
+                            addItem({
+                              productId: product.id,
+                              title: product.title,
+                              price: product.price,
+                              image: product.images?.[0],
+                              sellerId: product.sellerId,
+                            })
                           }
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
@@ -483,7 +459,6 @@ function SearchPageContent() {
         )}
       </div>
 
-      {AuthDialog}
     </div>
   );
 }
@@ -492,13 +467,10 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50">
-          <MainNavbar />
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading search...</p>
-            </div>
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <p className="text-gray-600">Loading search...</p>
           </div>
         </div>
       }

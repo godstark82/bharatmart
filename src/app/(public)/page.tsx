@@ -19,9 +19,8 @@ import {
   ShoppingBag,
   ShoppingCart,
 } from "lucide-react";
-import { MainNavbar } from "@/components/layout/MainNavbar";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
-import { useAuthGate } from "@/hooks/useAuthGate";
+import { useCategories } from "@/lib/providers/CategoriesProvider";
 
 async function fetchProducts(): Promise<Product[]> {
   const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
@@ -32,15 +31,6 @@ async function fetchProducts(): Promise<Product[]> {
     createdAt: doc.data().createdAt?.toDate() || new Date(),
     updatedAt: doc.data().updatedAt?.toDate(),
   })) as Product[];
-}
-
-async function fetchCategories(): Promise<Category[]> {
-  const snapshot = await getDocs(collection(db, "categories"));
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate() || new Date(),
-  })) as Category[];
 }
 
 function ProductCarousel({ products, title, getCategoryName }: { products: Product[]; title: string; getCategoryName: (id: string) => string }) {
@@ -223,18 +213,10 @@ function CategoryIcons({ categories }: { categories: Category[] }) {
 
 export default function HomePage() {
   const { addItem } = useInquiry();
-  const { ensureAuth, AuthDialog } = useAuthGate({
-    title: "Sign in to add to cart",
-    description: "Please sign in or create an account to add products to your cart.",
-  });
+  const { categories } = useCategories();
   const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["products"],
     queryFn: fetchProducts,
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
-    queryFn: fetchCategories,
   });
 
   const getCategoryName = (categoryId: string) => {
@@ -272,25 +254,23 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <MainNavbar />
-
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-blue-700 to-blue-900 text-white py-12">
+      <section className="bg-gradient-to-r from-blue-700 to-blue-900 text-white py-6 sm:py-8 md:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative rounded-lg overflow-hidden">
-            <div className="flex items-center justify-between p-8 md:p-12">
-              <div className="flex-1">
-                <p className="text-blue-200 text-sm mb-2">Best Deal Online on smart watches</p>
-                <h2 className="text-4xl md:text-5xl font-bold mb-4">SMART WEARABLE</h2>
-                <p className="text-2xl md:text-3xl font-bold text-yellow-300 mb-6">UP to 80% OFF</p>
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+            <div className="flex items-center justify-between p-4 sm:p-6 md:p-8 lg:p-12">
+              <div className="flex-1 min-w-0">
+                <p className="text-blue-200 text-xs sm:text-sm mb-2">Best Deal Online on smart watches</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4">SMART WEARABLE</h2>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-yellow-300 mb-4 md:mb-6">UP to 80% OFF</p>
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-sm sm:text-base">
                   Shop Now
                 </Button>
               </div>
               <div className="hidden md:block flex-shrink-0">
-                <div className="w-64 h-64 bg-white/10 rounded-full flex items-center justify-center">
-                  <ShoppingBag className="h-32 w-32 text-white/30" />
+                <div className="w-48 h-48 lg:w-64 lg:h-64 bg-white/10 rounded-full flex items-center justify-center">
+                  <ShoppingBag className="h-24 w-24 lg:h-32 lg:w-32 text-white/30" />
                 </div>
               </div>
             </div>
@@ -304,11 +284,11 @@ export default function HomePage() {
       </section>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {productsLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600 text-lg">Loading products...</p>
+          <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600 text-sm sm:text-lg">Loading products...</p>
           </div>
         ) : (
           <>
@@ -318,26 +298,26 @@ export default function HomePage() {
               if (categoryProducts.length === 0) return null;
 
               return (
-                <div key={category.id} className="mb-16">
+                <div key={category.id} className="mb-10 sm:mb-16">
                   {/* Category Header */}
-                  <div className="mb-6">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                  <div className="mb-4 sm:mb-6">
+                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                       Best deal on {category.name}
                     </h2>
-                    <p className="text-gray-600 text-lg">
+                    <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
                       {getCategoryDescription(category.name)}. Explore our curated selection of premium {category.name.toLowerCase()} products.
                     </p>
                   </div>
 
                   {/* Products Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 mb-4">
                     {categoryProducts.slice(0, 6).map((product) => (
                       <div
                         key={product.id}
                         className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden group"
                       >
                         <Link href={`/product/${product.id}`}>
-                          <div className="relative h-40 bg-gray-100">
+                          <div className="relative h-32 sm:h-36 md:h-40 bg-gray-100">
                             {product.images && product.images.length > 0 ? (
                               <Image
                                 src={product.images[0]}
@@ -358,27 +338,25 @@ export default function HomePage() {
                             )}
                           </div>
                         </Link>
-                        <div className="p-3 space-y-2">
+                        <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                           <Link href={`/product/${product.id}`}>
-                            <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2">
                               {product.title}
                             </p>
                           </Link>
-                          <p className="text-lg font-bold text-blue-600">₹{product.price.toLocaleString()}</p>
+                          <p className="text-base sm:text-lg font-bold text-blue-600">₹{product.price.toLocaleString()}</p>
                           <Button
                             size="sm"
-                            className="w-full"
+                            className="w-full text-xs sm:text-sm h-8 sm:h-9"
                             onClick={(e) => {
                               e.preventDefault();
-                              ensureAuth(() =>
-                                addItem({
-                                  productId: product.id,
-                                  title: product.title,
-                                  price: product.price,
-                                  image: product.images?.[0],
-                                  sellerId: product.sellerId,
-                                })
-                              );
+                              addItem({
+                                productId: product.id,
+                                title: product.title,
+                                price: product.price,
+                                image: product.images?.[0],
+                                sellerId: product.sellerId,
+                              });
                             }}
                           >
                             <ShoppingCart className="h-4 w-4 mr-2" />
@@ -409,9 +387,9 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-blue-900 text-white mt-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <footer className="bg-blue-900 text-white mt-8 sm:mt-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
             {/* Contact Us */}
             <div>
               <h3 className="text-xl font-bold mb-4">BharatMart</h3>
@@ -427,12 +405,12 @@ export default function HomePage() {
                 </div>
                 <div className="mt-4">
                   <p className="font-semibold mb-2">Download App</p>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 justify-center sm:justify-start">
                       <Download className="h-4 w-4 mr-2" />
                       App Store
                     </Button>
-                    <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                    <Button size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 justify-center sm:justify-start">
                       <Download className="h-4 w-4 mr-2" />
                       Google Play
                     </Button>
@@ -477,13 +455,12 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-blue-800 pt-6 text-center text-sm text-blue-200">
+          <div className="border-t border-blue-800 pt-4 sm:pt-6 text-center text-xs sm:text-sm text-blue-200">
             <p>© 2026 All rights reserved. BharatMart Ltd.</p>
           </div>
         </div>
       </footer>
 
-      {AuthDialog}
     </div>
   );
 }

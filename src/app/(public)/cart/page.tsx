@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MainNavbar } from "@/components/layout/MainNavbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,19 +16,18 @@ import { loadLocation } from "@/lib/location";
 
 export default function CartPage() {
   const { items, updateQty, removeItem, clearCart, totalAmount, totalQty } = useInquiry();
-  const { isAuthenticated, openAuthDialog, AuthDialog } = useAuthGate({
-    title: "Sign in to view cart",
-    description: "Please sign in or create an account to view your cart and checkout.",
+  const { openAuthDialog, AuthDialog } = useAuthGate({
+    title: "Sign in to checkout",
+    description: "Please sign in or create an account to complete your order.",
   });
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!isAuthenticated) openAuthDialog();
-  }, [isAuthenticated, openAuthDialog]);
-
   const handleCheckout = async () => {
     if (items.length === 0) return;
-    if (!user) return;
+    if (!user) {
+      openAuthDialog();
+      return;
+    }
 
     // Create an order record so it shows up in "Previous orders".
     // (We still send the checkout to WhatsApp.)
@@ -58,47 +55,6 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <MainNavbar />
-
-      {!isAuthenticated ? (
-        <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="bg-white rounded-lg border overflow-hidden">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 p-8 md:p-10">
-              <div className="w-full md:w-[420px] flex justify-center">
-                <Image
-                  src="/cart-empty.svg"
-                  alt="Empty cart illustration"
-                  width={420}
-                  height={220}
-                  className="h-auto w-full max-w-[420px]"
-                  priority
-                />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  Your BharatMart Cart is empty
-                </h1>
-                <Link href="/" className="inline-block mt-2 text-blue-600 hover:text-blue-700">
-                  Shop today's deals
-                </Link>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <Link href="/login">
-                    <Button className="bg-yellow-400 text-black hover:bg-yellow-500">
-                      Sign in to your account
-                    </Button>
-                  </Link>
-                  <Link href="/signup">
-                    <Button variant="outline">Sign up now</Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      ) : (
-        <>
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between gap-4">
@@ -196,8 +152,6 @@ export default function CartPage() {
           </div>
         )}
       </main>
-        </>
-      )}
 
       {AuthDialog}
     </div>

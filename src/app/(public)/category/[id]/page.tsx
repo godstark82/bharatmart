@@ -20,9 +20,7 @@ import { useParams } from "next/navigation";
 import { ShoppingCart, Package, Filter, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MainNavbar } from "@/components/layout/MainNavbar";
 import { useInquiry } from "@/lib/providers/InquiryProvider";
-import { useAuthGate } from "@/hooks/useAuthGate";
 
 async function fetchCategory(categoryId: string): Promise<Category | null> {
   const docRef = doc(db, "categories", categoryId);
@@ -61,10 +59,6 @@ export default function CategoryPage() {
   const params = useParams();
   const categoryId = params.id as string;
   const { addItem } = useInquiry();
-  const { ensureAuth, AuthDialog } = useAuthGate({
-    title: "Sign in to add to cart",
-    description: "Please sign in or create an account to add products to your cart.",
-  });
 
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
@@ -146,9 +140,9 @@ export default function CategoryPage() {
 
   if (categoryLoading || productsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="mx-auto mb-4 size-12 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <p className="text-gray-600">Loading category...</p>
         </div>
       </div>
@@ -157,10 +151,10 @@ export default function CategoryPage() {
 
   if (!category) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Category Not Found</h1>
-          <p className="text-gray-600 mb-4">The category you're looking for doesn't exist.</p>
+          <h1 className="mb-2 text-xl font-bold text-gray-900 sm:text-2xl">Category Not Found</h1>
+          <p className="mb-4 text-gray-600">The category you're looking for doesn't exist.</p>
           <Link href="/">
             <Button>Go Back Home</Button>
           </Link>
@@ -170,27 +164,20 @@ export default function CategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <MainNavbar />
-      
+    <div className="flex min-h-0 flex-1 flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mt-2">{category.name}</h1>
-              <p className="text-gray-600 mt-1">
-                {filteredAndSortedProducts.length} product{filteredAndSortedProducts.length !== 1 ? "s" : ""} found
-              </p>
-            </div>
-          </div>
+      <div className="shrink-0 border-b bg-white">
+        <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+          <h1 className="text-xl font-bold text-gray-900 sm:text-2xl md:text-3xl">{category.name}</h1>
+          <p className="mt-1 text-sm text-gray-600 sm:text-base">
+            {filteredAndSortedProducts.length} product{filteredAndSortedProducts.length !== 1 ? "s" : ""} found
+          </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters */}
-          <aside className="lg:w-64 flex-shrink-0">
+      <div className="container mx-auto flex min-h-0 flex-1 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:flex-row lg:gap-8 lg:px-8 lg:py-8">
+        {/* Sidebar Filters */}
+        <aside className="shrink-0 lg:w-64">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -262,36 +249,35 @@ export default function CategoryPage() {
                 </div>
               </CardContent>
             </Card>
-          </aside>
+        </aside>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Sort Bar */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+        {/* Main Content */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* Sort Bar */}
+          <div className="mb-4 flex shrink-0 items-center justify-between sm:mb-6">
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
                     <SelectItem value="name-asc">Name: A to Z</SelectItem>
-                    <SelectItem value="name-desc">Name: Z to A</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                <SelectItem value="name-desc">Name: Z to A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Products Grid */}
-            {filteredAndSortedProducts.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-                  <p className="text-gray-600 mb-4">
+          {/* Products Grid */}
+          {filteredAndSortedProducts.length === 0 ? (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+              <Card className="w-full max-w-md">
+                <CardContent className="p-6 text-center sm:p-8">
+                  <Package className="mx-auto mb-4 size-12 text-gray-400 sm:size-16" />
+                  <h3 className="mb-2 text-base font-semibold text-gray-900 sm:text-lg">No products found</h3>
+                  <p className="mb-4 text-sm text-gray-600 sm:text-base">
                     {hasActiveFilters
                       ? "Try adjusting your filters to see more products."
                       : "No products available in this category yet."}
@@ -303,8 +289,9 @@ export default function CategoryPage() {
                   )}
                 </CardContent>
               </Card>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredAndSortedProducts.map((product) => (
                   <Card
                     key={product.id}
@@ -320,8 +307,8 @@ export default function CategoryPage() {
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                            <Package className="h-12 w-12 text-gray-400" />
+                          <div className="flex h-full w-full items-center justify-center bg-gray-200">
+                            <Package className="size-12 text-gray-400" />
                           </div>
                         )}
                         {product.featured && (
@@ -355,15 +342,13 @@ export default function CategoryPage() {
                         className="w-full"
                         size="sm"
                         onClick={() =>
-                          ensureAuth(() =>
-                            addItem({
-                              productId: product.id,
-                              title: product.title,
-                              price: product.price,
-                              image: product.images?.[0],
-                              sellerId: product.sellerId,
-                            })
-                          )
+                          addItem({
+                            productId: product.id,
+                            title: product.title,
+                            price: product.price,
+                            image: product.images?.[0],
+                            sellerId: product.sellerId,
+                          })
                         }
                       >
                         <ShoppingCart className="h-4 w-4 mr-2" />
@@ -374,11 +359,8 @@ export default function CategoryPage() {
                 ))}
               </div>
             )}
-          </div>
         </div>
       </div>
-
-      {AuthDialog}
     </div>
   );
 }
